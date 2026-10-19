@@ -5,7 +5,7 @@
 The release workflow runs:
 
 1. **16 JVM transport checks**: valid framing, 1 GiB boundary, duplicate Content-Length, negative/oversized/invalid lengths, chunked-body rejection, CRLF enforcement, invalid targets/versions, header bounds, streaming exact lengths, truncated bodies, filename sanitization.
-2. **3 independent QR matrix comparisons**: common private IPv4 addresses; byte-mode version 4-L mask 0 compared with Segno 1.6.6.
+2. **3 independent QR matrix comparisons**: common private IPv4 addresses; byte-mode version 4-L mask 0 compared with python-qrcode 8.2.
 3. JavaScript syntax validation, Android debug/test APK compilation and Android lint.
 4. **19 on-device protocol checks on API 35 emulator**: bundled page, unauthorized access, wrong code, hostile Origin, TV approval requirement, one-time pairing, authenticated upload/download byte equality, listing, traversal, unsafe link scheme, text, diagnostics, delete and logout revocation.
 5. APK signature verification and SHA-256 generation. Only then is a GitHub preview published.

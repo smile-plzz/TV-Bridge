@@ -35,7 +35,7 @@ jobs:
           mkdir -p test-classes
           javac -cp "$ANDROID_HOME/platforms/android-35/android.jar" -d test-classes app/src/main/java/io/github/smileplzz/tvbridge/{HttpWire,QrCode}.java tests/{ProtocolTest,QrDump}.java
           java -cp test-classes io.github.smileplzz.tvbridge.ProtocolTest
-          pip install segno==1.6.6
+          pip install qrcode==8.2
           python tests/check_qr.py "test-classes:$ANDROID_HOME/platforms/android-35/android.jar"
           node --check app/src/main/assets/app.js
       - name: Build and lint
