@@ -115,7 +115,7 @@ final class BridgeServer implements AutoCloseable {
                 try(InputStream file=new FileInputStream(f)){HttpWire.copy(file,out,f.length());}return;
             }
             if(path.equals("/api/send")&&r.method().equals("POST")) {
-                JSONObject b=body(in,r,16384);String text=b.optString("text").trim();boolean link=b.optBoolean("link");
+                JSONObject b=body(in,r,65536);String text=b.optString("text").trim();boolean link=b.optBoolean("link");
                 if(text.isEmpty()||text.length()>8000){reply(out,400,"Text must contain 1–8000 characters");return;}
                 if(link){URI u;try{u=new URI(text);}catch(Exception e){reply(out,400,"Invalid URL");return;}
                     if(!("https".equalsIgnoreCase(u.getScheme())||"http".equalsIgnoreCase(u.getScheme()))||u.getHost()==null||u.getUserInfo()!=null){reply(out,400,"Use an http or https URL");return;}}

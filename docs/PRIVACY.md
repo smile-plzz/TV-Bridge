@@ -12,4 +12,4 @@ An approved phone can list, download, upload, and delete files inside TV Bridgeâ
 
 Diagnostics are generated on request and include version, manufacturer/model, Android version, free storage, session count, uptime, capture timestamp, and the last 40 connection/transfer event descriptions. Event descriptions can include filenames. Reports omit pairing codes, tokens, file contents, sent text, and sent URLs. Review a report before sharing it.
 
-The app requests Internet and network-state permissions. It does not request broad file access, accessibility services, microphone, camera, or contacts. Media and links can open another app, whose behavior and privacy policy are separate.
+The app declares Internet, network-state and request-package-install permissions. Opening an APK requires the user to enable TV Bridge as an installation source in Android Settings and confirm Androidâ€™s installer. It does not request broad file access, accessibility services, microphone, camera, or contacts. Media and links can open another app, whose behavior and privacy policy are separate.

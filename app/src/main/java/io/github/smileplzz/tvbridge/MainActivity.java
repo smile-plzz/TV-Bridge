@@ -80,6 +80,9 @@ public final class MainActivity extends Activity implements BridgeServer.Listene
     void openFile(File file){
         Uri uri=new Uri.Builder().scheme("content").authority("io.github.smileplzz.tvbridge.files").appendPath(file.getName()).build();
         String type=getContentResolver().getType(uri);
+        if("application/vnd.android.package-archive".equals(type)&&!getPackageManager().canRequestPackageInstalls()){
+            new AlertDialog.Builder(this).setTitle("Allow APK installation?").setMessage("Android requires you to allow TV Bridge as an installation source. Enable it in Settings, return here, then open the APK again. Only install APKs you trust.").setNegativeButton("Cancel",null).setPositiveButton("Open Android settings",(d,w)->{try{startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,Uri.parse("package:"+getPackageName())));}catch(ActivityNotFoundException e){toast("Open your TV’s Security settings to allow installation from TV Bridge.");}}).show();return;
+        }
         if(type!=null&&(type.startsWith("image/")||type.startsWith("video/"))){startActivity(new Intent(this,MediaActivity.class).setDataAndType(uri,type));return;}
         try{startActivity(new Intent(Intent.ACTION_VIEW).setDataAndType(uri,type).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION));}
         catch(ActivityNotFoundException e){toast("No installed app can open this file type.");}
