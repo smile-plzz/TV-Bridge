@@ -19,5 +19,6 @@ android {
             keyPassword System.getenv('TVBRIDGE_KEY_PASSWORD') ?: 'android'
         }
     }
+    if (!System.getenv('TVBRIDGE_KEYSTORE')) { signingConfigs.release.storeFile = signingConfigs.debug.storeFile }
     buildTypes { release { minifyEnabled false; signingConfig signingConfigs.release } }
 }

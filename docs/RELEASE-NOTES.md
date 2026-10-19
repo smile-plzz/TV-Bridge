@@ -11,13 +11,13 @@ A standalone local phone ↔ Android TV companion, distributed as a release-mode
 - Phone controls for TV Bridge video: play/pause, ±30 seconds, volume and close.
 - Named phone sessions, individual disconnect that closes active connections, live connection status, recent phone transfer history and richer diagnostics.
 - TV banner with product name, improved About/help, store-listing draft and publication/upgrade guidance.
-- Release/debug lint, protocol/storage/QR checks, Android transfer tests, foreground-service continuity, release launch and certificate-continuity gates.
+- Release/debug lint, protocol/storage/QR checks, Android transfer tests, foreground-service continuity, release-candidate launch and private production-certificate verification.
 
 ## Installation and upgrades
 
-Install `TV-Bridge-1.1.0.apk` on Android TV 8.0+, scan the QR with your phone, enter the code and approve on TV. Both devices need the same trusted IPv4 LAN. Existing preview installations can upgrade under the preserved signing identity without intentionally deleting app data.
+Install `TV-Bridge-1.1.0.apk` on Android TV 8.0+, scan the QR with your phone, enter the code and approve on TV. Both devices need the same trusted IPv4 LAN. **Preview migration:** the original preview signing key was not retained. If you installed it, download shared files first, uninstall the preview (which deletes its app data), then install 1.1.0. This one-time reinstall is not presented as a seamless update.
 
-The release APK is not debuggable. Its certificate is retained from the original development preview for update compatibility. The key cache is not permanent storage; publication fails if the certificate changes. A durable owner-controlled signing setup and store-policy review remain required before Google Play distribution.
+The release APK is not debuggable and is signed with a privately backed-up production key. Its public certificate fingerprint is committed in the repository and included in SIGNING.txt. Private keys are not stored in the repository or a public CI cache. Google Play distribution still needs the owner’s store account and policy review.
 
 ## Known limits
 

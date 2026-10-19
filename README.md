@@ -36,7 +36,7 @@ The foreground connection stays active while opening media, using the file picke
 
 Choose the **same file** again in the same browser and at the same TV address. The last committed 2 MiB chunk is recovered, even after a page refresh or bridge restart followed by pairing again. Paused transfer records appear on your phone; **Discard** removes them. Incomplete transfers expire after 24 hours. Phone metadata is kept in local browser storage; access tokens remain in session storage.
 
-The sampled file identity uses name, size, modification time and first/last samples to avoid resuming the wrong selection. It is not a cryptographic proof of the source file. After completion, TV Bridge computes the saved file’s SHA-256 and shows it in this phone’s transfer history for optional independent comparison.
+The sampled file identity uses name, size and first/last samples to avoid resuming the wrong selection. It is not a cryptographic proof of the source file. After completion, TV Bridge computes the saved file’s SHA-256 and shows it in this phone’s transfer history for optional independent comparison.
 
 ## Sharing an existing TV file
 
@@ -54,7 +54,9 @@ Choose **Files on TV → Add file from TV**. Only the selected file is copied in
 
 ## Updates and publication
 
-Install a newer APK over the existing app under the same signing certificate to retain shared files. 1.1 preserves the first preview’s certificate and uses the release build type. CI checks that certificate continuity before publishing. The inherited certificate originated as a development certificate, and its cache is not a permanent backup; see [publishing and signing](docs/PUBLISHING.md) before wider/store distribution.
+The first stable release introduces a privately backed-up production signing identity. The original preview key was not retained by its CI configuration. **If you installed the 1.0 preview, download your shared files, uninstall that preview, then install 1.1.0.** Uninstalling deletes the old app’s stored files. Future stable updates must use the committed production certificate to install over 1.1 without intentionally deleting data.
+
+CI builds/tests the release candidate and prepares an unpublished draft. The final APK is signed privately and checked against `release/signing-certificate.sha256`; private signing keys are never committed or stored in a public CI cache. See [publishing and signing](docs/PUBLISHING.md).
 
 GitHub Releases is the distribution channel. A Google Play/App Store listing has not been submitted. Store copy and readiness notes are included in [STORE-LISTING.md](docs/STORE-LISTING.md).
 
@@ -67,9 +69,9 @@ gradle assembleDebug assembleDebugAndroidTest lintDebug
 gradle assembleRelease lintRelease
 ```
 
-The release signing configuration defaults to the existing development keystore, which must already exist. For owner-controlled builds set the signing variables described in [PUBLISHING.md](docs/PUBLISHING.md). A wrapper binary is not bundled; CI pins Gradle through setup-gradle.
+CI candidates use an ephemeral development key for testing. Finalize using the private production key with `tools/sign_release.py`, or set the signing variables described in [PUBLISHING.md](docs/PUBLISHING.md). A wrapper binary is not bundled; CI pins Gradle through setup-gradle.
 
-CI validates HTTP framing, durable upload recovery, QR matrices against an independent encoder, JavaScript syntax, Android protocol and service continuity, release-APK launch, APK signatures and checksums. [Testing evidence and owner acceptance](docs/TESTING.md) distinguish emulator verification from physical TV/iPhone usability.
+CI validates HTTP framing, durable upload recovery, QR matrices against an independent encoder, JavaScript syntax, Android protocol and service continuity, release-candidate launch, production APK signatures and checksums. [Testing evidence and owner acceptance](docs/TESTING.md) distinguish emulator verification from physical TV/iPhone usability.
 
 ## Troubleshooting
 

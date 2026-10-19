@@ -37,7 +37,7 @@ The original raw `/api/upload` remains compatible but is not the browser client�
 
 At most eight staged transfers. Random 128-bit transfer IDs are capabilities and require an approved session to use. Metadata and `.part` files reside outside the shared folder. Every chunk requires the exact committed offset and reserves 32 MiB free storage; a failed/truncated chunk rolls back to its prior length. Completed chunks are fsynced. Finish atomically moves the file into shared storage, then computes SHA-256. Repeating finish before acknowledgement is idempotent. Metadata/staged data older than 24 hours is removed on next server start.
 
-Browser identity combines file name, size, modification time and a sampled noncryptographic checksum. The server’s saved-file SHA-256 is reported separately; it is not represented as source-hash verification. Phone local storage holds paused IDs/history; session storage holds the authorization token. Re-pairing at the same origin permits recovery; a new IP address is a new browser origin.
+Browser identity combines file name, size and a sampled noncryptographic checksum. The server’s saved-file SHA-256 is reported separately; it is not represented as source-hash verification. Phone local storage holds paused IDs/history; session storage holds the authorization token. Re-pairing at the same origin permits recovery; a new IP address is a new browser origin.
 
 Names are sanitized and prefixed internally; friendly display names remove that prefix. Canonical path checks constrain access to the private shared directory. TV imports use Android’s document picker and copy only selected URIs. External viewers get temporary read permission for a content URI.
 

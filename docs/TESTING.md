@@ -2,7 +2,7 @@
 
 ## Version 1.1 acceptance
 
-The 1.1 release adds an 18-case durable upload suite, native-download one-use/revocation checks, resumable HTTP transfer checks and Android foreground-service lifecycle checks. The Android runner launches the TV activity, captures `tv-home.png`, finishes the activity, verifies the same server remains available, then explicitly stops the service. CI installs and launches the release-mode APK after instrumentation. The published artifact's certificate must match the newest existing release.
+The 1.1 release adds an 18-case durable upload suite, native-download one-use/revocation checks, resumable HTTP transfer checks and Android foreground-service lifecycle checks. The Android runner launches the TV activity, captures `tv-home.png`, finishes the activity, verifies the same server remains available, then explicitly stops the service. CI installs and launches the release-mode APK after instrumentation. The privately finalized artifact must match the committed production certificate fingerprint.
 
 Local 1.1 Java compilation, JavaScript syntax, 17 transport checks and 18 resumable-storage checks passed. The Windows sandbox redirects the default temporary directory; local storage tests use an explicit writable temporary directory. Cloud Android/build results for 1.1 are recorded after completion. Historical 1.0 evidence below is not a claim that the new release has already passed.
 

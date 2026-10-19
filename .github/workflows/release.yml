@@ -24,10 +24,6 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
-      - uses: actions/cache@v4
-        with:
-          path: ~/.android/debug.keystore
-          key: tv-bridge-preview-signing-v1
       - name: SDK
         run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
       - name: Protocol and QR checks
@@ -39,6 +35,7 @@ jobs:
           pip install qrcode==8.2
           python tests/check_qr.py "test-classes:$ANDROID_HOME/platforms/android-35/android.jar"
           node --check app/src/main/assets/app.js
+          node tests/browser-identity.test.cjs
       - name: Build and lint
         run: |
           gradle --no-daemon assembleDebug assembleDebugAndroidTest lintDebug
@@ -47,22 +44,11 @@ jobs:
         run: |
           mkdir -p dist
           cp app/build/outputs/apk/debug/app-debug.apk dist/TV-Bridge-test-target.apk
-          cp app/build/outputs/apk/release/app-release.apk dist/TV-Bridge-1.1.0.apk
+          cp app/build/outputs/apk/release/app-release.apk dist/TV-Bridge-1.1.0-candidate.apk
           cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk dist/TV-Bridge-tests.apk
           cd dist
-          sha256sum TV-Bridge-1.1.0.apk > SHA256SUMS.txt
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs TV-Bridge-1.1.0.apk > SIGNING.txt
-      - name: Preserve installed-app signing identity
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TAG=$(gh api 'repos/${{ github.repository }}/releases?per_page=1' --jq '.[0].tag_name // empty')
-          if [ -n "$TAG" ]; then
-            gh release download "$TAG" --pattern SIGNING.txt --dir previous-signing
-            PREVIOUS=$(grep 'certificate SHA-256 digest:' previous-signing/SIGNING.txt)
-            CURRENT=$(grep 'certificate SHA-256 digest:' dist/SIGNING.txt)
-            test "$PREVIOUS" = "$CURRENT" || { echo 'Signing identity changed. Restore the original key before publishing.'; exit 1; }
-          fi
+          sha256sum TV-Bridge-1.1.0-candidate.apk > SHA256SUMS.txt
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs TV-Bridge-1.1.0-candidate.apk > SIGNING.txt
       - uses: actions/upload-artifact@v4
         with:
           name: tv-bridge-build
@@ -103,7 +89,7 @@ jobs:
             adb shell am instrument -w io.github.smileplzz.tvbridge.test/io.github.smileplzz.tvbridge.BridgeInstrumentation | tee device-results.txt
             grep -q TV_BRIDGE_TESTS_OK device-results.txt
             adb pull /sdcard/Android/data/io.github.smileplzz.tvbridge/files/tv-home.png tv-home.png
-            adb install -r dist/TV-Bridge-1.1.0.apk
+            adb install -r dist/TV-Bridge-1.1.0-candidate.apk
             adb shell am start -W -n io.github.smileplzz.tvbridge/.MainActivity
             adb shell pidof io.github.smileplzz.tvbridge
       - uses: actions/upload-artifact@v4
@@ -125,9 +111,9 @@ jobs:
         with:
           name: tv-bridge-build
           path: dist
-      - name: Publish GitHub release
+      - name: Prepare draft for private production signing
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v1.1.0"
-          gh release create "$TAG" dist/TV-Bridge-1.1.0.apk dist/SHA256SUMS.txt dist/SIGNING.txt --target "$GITHUB_SHA" --title "TV Bridge 1.1.0" --latest --notes-file docs/RELEASE-NOTES.md
+          gh release create "$TAG" --draft --target "$GITHUB_SHA" --title "TV Bridge 1.1.0" --notes-file docs/RELEASE-NOTES.md

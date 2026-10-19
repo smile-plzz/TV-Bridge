@@ -25,7 +25,7 @@ public final class MainActivity extends Activity implements BridgeServer.Listene
     AlertDialog activeDialog;
     String page="home";
     String boundIp;
-    final ServiceConnection serviceConnection=new ServiceConnection(){public void onServiceConnected(ComponentName n,IBinder binder){connection=((BridgeService.LocalBinder)binder).service();bridge=connection.bridge;connection.attach(MainActivity.this);home();}public void onServiceDisconnected(ComponentName n){connection=null;bridge=null;home();}};
+    final ServiceConnection serviceConnection=new ServiceConnection(){public void onServiceConnected(ComponentName n,IBinder binder){connection=((BridgeService.LocalBinder)binder).service();bridge=connection.bridge;connection.attach(MainActivity.this);if(page.equals("files"))files();else if(page.equals("phones"))phones();else if(page.equals("about"))about();else home();}public void onServiceDisconnected(ComponentName n){connection=null;bridge=null;home();}};
     int dp(int n){return (int)(n*getResources().getDisplayMetrics().density);}
     @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);}
     @Override public void onStart(){super.onStart();visible=true;startForegroundService(new Intent(this,BridgeService.class));bound=bindService(new Intent(this,BridgeService.class),serviceConnection,Context.BIND_AUTO_CREATE);}

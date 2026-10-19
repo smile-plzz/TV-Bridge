@@ -30,9 +30,9 @@ System-wide input, screen mirroring, Internet relays and other apps’ private d
 - No silent installation, unexpected link opening, or broad storage enumeration.
 - Clear first success: install on TV, scan, enter code, approve, send a small photo, confirm Open on TV.
 - Recoverable upload interruption; native download handoff; meaningful empty/error states.
-- Automatic build, lint, protocol/storage/QR tests, Android integration checks, activity/service continuity smoke checks, release-APK launch, checksum and certificate continuity before publishing.
+- Automatic build, lint, protocol/storage/QR tests, Android integration checks, activity/service continuity smoke checks, release-candidate launch, checksum and private production-certificate verification before publishing.
 - Physical TV/iPhone usability is tracked separately from emulator test evidence.
 
 ## Publication channel
 
-Version 1.1 is published through GitHub Releases as an installable release-mode APK. Google Play/App Store submission requires owner accounts and store review and is not represented as completed. The existing signing certificate is preserved to permit upgrading the first preview; a guard stops publication if the certificate changes. Production store distribution must use a durable owner-controlled signing key and meet current store requirements.
+Version 1.1 is published through GitHub Releases as an installable release-mode APK. Google Play/App Store submission requires owner accounts and store review and is not represented as completed. The first stable release uses a privately backed-up production certificate; preview users must back up and reinstall because the original CI key was not retained. Future final APKs are checked against the committed production fingerprint. Store distribution also requires current store-policy review.
