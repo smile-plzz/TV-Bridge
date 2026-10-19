@@ -63,6 +63,7 @@ public final class HttpWire {
     public static String safeName(String name) {
         String s=name.replaceAll("[^\\p{L}\\p{N} ._()-]", "_").replaceAll("^[. ]+", "").trim();
         if (s.length()>100) s=s.substring(s.length()-100);
+        if (s.endsWith(".part")) s+="_shared";
         return s.isEmpty()?"file":s;
     }
 }

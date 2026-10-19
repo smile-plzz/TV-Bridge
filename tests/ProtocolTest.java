@@ -25,6 +25,7 @@ public class ProtocolTest {
         check(!HttpWire.safeName("../../a\r\n.txt").contains("/"),"filename traversal");
         check(HttpWire.safeName("...").equals("file"),"empty filename");
         check(HttpWire.safeName("my video.mp4").equals("my video.mp4"),"normal filename");
+        check(!HttpWire.safeName("download.part").endsWith(".part"),"reserve partial-transfer suffix");
         System.out.println(count+" protocol checks passed");
     }
 }
