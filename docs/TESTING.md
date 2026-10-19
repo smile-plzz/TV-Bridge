@@ -36,4 +36,8 @@ Expected marker: `TV_BRIDGE_TESTS_OK: 19 checks`. The test writes/deletes a rand
 
 ## Current evidence
 
-Initial local Java compilation against Android API 35 and browser JavaScript syntax validation passed. The local Gradle native library and ADB daemon could not start in the restricted Windows runtime; GitHub Actions supplies APK/lint/emulator gates. Consult the actual workflow run for the published commit rather than treating the existence of this test plan as a test pass. Physical TV/iPhone acceptance remains for the owner.
+Verified release: [v1.0.0-preview.5](https://github.com/smile-plzz/TV-Bridge/releases/tag/v1.0.0-preview.5), application source commit `f7216da64f3a4278bed7fb90ddac50c5fbe19a41`.
+
+[GitHub Actions run 39226817904](https://github.com/smile-plzz/TV-Bridge/actions/runs/39226817904) completed successfully on 19 October 2026: APK/test APK compilation, Android lint, 17 JVM transport checks, 3 independent QR comparisons, JavaScript syntax validation, 19 Android API 35 protocol checks, signature verification, checksum generation and publication. Device log marker: `TV_BRIDGE_TESTS_OK: 19 checks`.
+
+Local Java compilation and the 17 transport / 3 QR checks also passed. The local Gradle native library and ADB daemon could not start in the restricted Windows runtime; cloud runners supplied those checks. Browser policy prevented a local visual preview. Physical TV remote navigation, photo/video rendering, document-picker behavior, APK installation settings and iPhone/Safari acceptance remain unverified and must be checked on the owner’s devices.
