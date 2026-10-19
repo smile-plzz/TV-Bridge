@@ -1,15 +1,31 @@
-# Privacy and connection security
+# Privacy and security — TV Bridge 1.1
 
-TV Bridge has no account, analytics, cloud API, third-party advertising, external QR service, or external web assets. The QR is generated entirely on the TV. Transferred files live in the app’s private `shared` directory until deleted or the app is uninstalled. Android backups are disabled.
+TV Bridge has no account, advertising, analytics, external QR service, cloud upload API or external web assets. Files move over your home network. QR codes are generated on the TV. Android backups are disabled.
 
-The server binds to the current local IPv4 address on TCP port 8765 while the TV activity is visible. It closes sockets and invalidates all pairing requests and session tokens when the activity stops. Changing networks restarts it with a new pairing code. No router port mapping is requested.
+## Connection and access
 
-Pairing uses a random six-digit code, a 10-minute window, five attempts per minute per source address, and explicit TV confirmation. Pending approval lasts 60 seconds. An approved phone gets an unpredictable two-UUID bearer token with a fixed one-hour expiry, kept in browser session storage. Tokens are never included in URLs, diagnostics, or QR codes. Approval polling consumes the pairing request exactly once. Host/Origin checks, cross-site request rejection, strict content security policy, no CORS allowance, and no-store responses limit browser-based cross-origin attacks.
+The user launches the TV app to start a local IPv4 server on port 8765. A foreground service keeps it available while switching TV activities. Stop is available in the app and its notification. The service stops after two hours and does not auto-start at boot. Process death, Stop, updates and network changes invalidate in-memory sessions and download tickets.
 
-HTTP traffic, including file contents and session tokens, is **not encrypted**. A hostile network participant can observe or interfere with it. These controls do not make public/shared Wi-Fi safe. Use a trusted home LAN and do not forward the port to the Internet.
+Pairing requires a random six-digit code (ten-minute validity), explicit TV approval within a minute and rate-limited attempts. Approved sessions last one hour. Their random two-UUID tokens live in browser session storage and never appear in QR codes or diagnostics. The TV can disconnect a named phone; its current sockets and issued tickets are also revoked.
 
-An approved phone can list, download, upload, and delete files inside TV Bridge’s shared directory. It cannot enumerate other TV storage. TV document-picker imports require the user to explicitly select a file. File paths are checked against the canonical shared directory. External viewers receive a read-only Android content URI with a temporary grant rather than an exposed filesystem path. Links are restricted to HTTP(S) and require TV approval.
+Local HTTP traffic—including files and tokens—is **unencrypted**. An adversarial network participant can observe or interfere with it. Use only a trusted home LAN; do not forward the port to the Internet. Origin/Host checks and restrictive browser headers reduce cross-origin attacks but do not make hostile Wi-Fi safe.
 
-Diagnostics are generated on request and include version, manufacturer/model, Android version, free storage, session count, uptime, capture timestamp, and the last 40 connection/transfer event descriptions. Event descriptions can include filenames. Reports omit pairing codes, tokens, file contents, sent text, and sent URLs. Review a report before sharing it.
+Native downloads use random one-use URLs, valid for one minute and tied to an authorized session. These URLs are short-lived capabilities; they may appear in the browser’s download records. The app sends no referrer and does not share the URLs externally.
 
-The app declares Internet, network-state and request-package-install permissions. Opening an APK requires the user to enable TV Bridge as an installation source in Android Settings and confirm Android’s installer. It does not request broad file access, accessibility services, microphone, camera, or contacts. Media and links can open another app, whose behavior and privacy policy are separate.
+## Storage
+
+Received files and explicitly imported TV files live in the app’s private shared directory until deleted or the app is uninstalled. Other TV storage is not enumerated. The document picker lets the user select an individual file, which is copied without altering the original.
+
+Incomplete transfers and their metadata are private to the TV app and expire after 24 hours (cleaned on server startup). Random transfer IDs plus an approved phone session permit recovery. Phone local storage keeps paused transfer IDs, filenames and the latest 20 completed-upload records, including saved-file checksums. Clear phone history removes completed history, not TV files. Discard removes a staged transfer. Browser site-data clearing removes phone records. A changed TV address creates a new browser origin.
+
+Up to five incoming text/link messages are queued in TV app memory while its screen is hidden; they disappear when the process/service ends. Links and file opening require visible TV confirmation. Text is copied to the TV clipboard only on explicit TV action.
+
+## Diagnostics
+
+User-requested JSON reports include app/version, device/Android, available storage, heap figures, uptime, session count and the latest 40 connection/transfer events. Events can contain filenames. Reports omit pairing codes, bearer tokens, transfer IDs, download tickets, file contents, sent text and sent URLs. Review before sharing. Reports describe TV Bridge, not other apps.
+
+## Android permissions
+
+Internet/network state support the local connection. Connected-device foreground-service permissions and a network-state prerequisite support that connection’s lifecycle. A timed partial wake lock keeps the CPU available during transfers. TV Bridge does not change router settings or request broad file, accessibility, microphone, camera or contacts access. Request-package-install permission supports user-initiated APK opening; Android’s installation-source setting and installer approval still apply. External viewers and websites have separate privacy behavior.
+
+Source/support: https://github.com/smile-plzz/TV-Bridge

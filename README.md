@@ -1,79 +1,88 @@
 # TV Bridge
 
-**A standalone phone ↔ Android TV companion.** Open TV Bridge on your television, scan its QR code with your phone, approve pairing on the TV, and share files, text, and links over your home network.
+**Your phone. Your TV. One local connection.**
 
-Created for **Ismail Hossain** · [GitHub](https://github.com/smile-plzz)
+Share files, text and links between a phone browser and Android TV. No phone installation, account, ads, analytics or cloud upload. Independent from other TV apps.
 
-## Download and install
+[**Download TV Bridge 1.1.0**](https://github.com/smile-plzz/TV-Bridge/releases/latest) · [Release notes](docs/RELEASE-NOTES.md) · [Privacy](docs/PRIVACY.md)
 
-Open [Releases](https://github.com/smile-plzz/TV-Bridge/releases) and download **TV-Bridge-1.0.0-preview.apk** from the newest successful preview. This is a sideloadable Android TV APK, not a phone app or Play Store release. The first release is published automatically after the build, lint, QR checks, and Android transfer checks pass.
+## Get connected
 
-1. Copy the APK to the TV using a USB drive or an existing file-transfer tool. You need this once, before TV Bridge can receive files itself.
-2. Open it using the TV’s file manager and allow that installer to install unknown apps if Android asks.
-3. Launch **TV Bridge** from the TV apps screen.
-4. Put your phone on the same home network. Scan the QR code or type the exact `http://TV-IP:8765` address shown on screen into Safari or Chrome.
-5. Enter the six-digit code, then choose **Allow** on the TV using its remote.
+1. Download `TV-Bridge-1.1.0.apk` from Releases. Install it on your Android TV using a USB drive or an existing transfer tool. Enable installation from that source if Android asks.
+2. Launch **TV Bridge** on your TV. Connect your phone to the same trusted home network.
+3. Scan the TV’s QR code, or type the exact `http://TV-IP:8765` address into Safari/Chrome.
+4. Enter the six-digit TV code and choose **Allow** on the TV.
+5. Choose a small photo on your phone. After upload, choose **Open on TV**, then confirm on the TV.
 
-**Requirements:** Android TV / Google TV, Android 8.0+ (API 26); a modern iPhone or Android browser; an IPv4 home Wi-Fi/Ethernet network allowing devices to communicate. The TV and phone can use different Wi-Fi bands if their router bridges them.
+**Requirements:** Android TV / Google TV, Android 8.0+ (API 26), a modern iPhone/Android browser, and a home IPv4 network where devices can communicate. Guest Wi-Fi, device isolation and VPNs can prevent connection.
 
-## What you can do
+## What it does
 
-| Feature | First release |
+| Feature | Experience |
 | --- | --- |
-| Pair a phone | Local QR code, expiring six-digit code, explicit TV approval |
-| Phone → TV files | Select several files; streamed sequential uploads, progress, cancellation |
-| TV → phone files | Download received files or files explicitly added through the TV file picker |
-| Manage files | List, open, delete, see storage availability |
-| Photos and videos | Built-in sampled photo viewer and platform-codec video player |
-| Send text | Show on TV and optionally copy to the TV clipboard |
-| Send links | TV confirms before handing an HTTP(S) link to an installed app |
-| Diagnostics | Download TV Bridge’s device/storage/session/event report as JSON |
-| Disconnect | Disconnect one phone, rotate the TV code, or leave the TV app |
+| Send files | Multiple-file queue, progress/speed, pause and recovery using the same file |
+| Receive TV files | Native browser downloads; add an existing TV file through Android’s document picker |
+| Browse shared files | Friendly names, search, category filters and sort by date/name/size |
+| Open on TV | Phone requests opening; TV confirms before viewing or installation |
+| Photos and videos | Sampled photo viewer and native Android-codec video player |
+| Phone playback controls | Play, pause, ±30 seconds, volume and close for TV Bridge video |
+| Text and links | Display/copy text and confirm HTTP(S) links on TV; five messages can wait while the TV app is hidden |
+| Connection management | Live phone status, named sessions, individual disconnect and Stop bridge |
+| Diagnostics | Download version, device, memory/storage and recent event information |
 
-Phone navigation: **Files · Text & links · Connection**. No phone installation, account, cloud backend, ads, tracking, subscriptions, or Nook TV / NowShowing dependency.
+The foreground connection stays active while opening media, using the file picker or watching another TV app. Stop it from TV Bridge or its notification. It stops automatically after **two hours**. Pairing codes last ten minutes; approved phone sessions last one hour. The service starts only when you launch TV Bridge; it does not start at boot.
 
-### Files already on the TV
+## Resuming a transfer
 
-Choose **Files on TV → Add file from TV** and select a file in Android’s document picker. TV Bridge copies only that file into its private shared folder. Some TVs need a compatible file manager/document picker installed first. Returning from the picker starts a fresh connection; scan the new QR/code and pair again. Refresh the phone’s shared-file list after the import completes.
+Choose the **same file** again in the same browser and at the same TV address. The last committed 2 MiB chunk is recovered, even after a page refresh or bridge restart followed by pairing again. Paused transfer records appear on your phone; **Discard** removes them. Incomplete transfers expire after 24 hours. Phone metadata is kept in local browser storage; access tokens remain in session storage.
 
-## Practical limits
+The sampled file identity uses name, size, modification time and first/last samples to avoid resuming the wrong selection. It is not a cryptographic proof of the source file. After completion, TV Bridge computes the saved file’s SHA-256 and shows it in this phone’s transfer history for optional independent comparison.
 
-- One upload at a time, at most **1 GiB per file**, with a **32 MiB** storage reserve. Files are streamed to disk rather than held in TV memory.
-- Browser downloads use an authenticated Blob; very large downloads can exhaust phone browser memory. Files over 200 MiB prompt before download. Prefer smaller files when downloading to an iPhone.
-- Transfers require TV Bridge to remain visible and the phone page to stay awake. Opening media, another app, a file picker, or pressing Home stops the server, cancels transfers and revokes all sessions. Reopening starts a new pairing code.
-- Cancelled/interrupted uploads restart from the beginning. They are not resumable. Crash leftovers older than 24 hours are cleaned at startup.
-- Local **HTTP is unencrypted**. Pair only on a trusted home network. No Internet relay, cloud access, mobile-data transfer, HTTPS certificate installation, or NAT traversal.
-- Pairing is available for 10 minutes; each approved session lasts one hour. **Disconnect all / New code** restarts pairing.
-- Photo/video support depends on the device’s Android decoders. Documents need an installed viewer. APKs need a compatible installer and Android’s normal installation approval; TV Bridge does not silently install applications or bypass security settings.
-- This does not control other apps, inject typing into their fields, collect their private diagnostics, mirror your screen, or act as a system-wide remote. Integrations can be added later.
+## Sharing an existing TV file
+
+Choose **Files on TV → Add file from TV**. Only the selected file is copied into TV Bridge’s private shared directory; the original is left untouched. A compatible Android document picker/file manager must be available. Refresh the phone file list when import finishes. Broad storage access is not requested.
+
+## Limits you should know
+
+- Files up to **1 GiB**; a **32 MiB** TV storage reserve. One upload chunk and up to two downloads at a time. Keep the phone awake during uploads; mobile browsers can suspend background pages.
+- Native downloads avoid app-side Blob buffering. If a download is interrupted, request a new download from Files; the one-use URL is not a permanent/resumable link.
+- Local **HTTP is unencrypted**. Use only on a trusted home network. No Internet relay, HTTPS certificate installation, screen mirroring or system-wide remote control.
+- Playback controls apply to TV Bridge’s player. The app cannot type into other applications’ fields or read their private reports.
+- TV image/video codecs, document viewers and document pickers vary. APKs require Android’s installation-source setting and installer confirmation. Nothing installs silently.
+- Stop, process death, network address changes and app updates invalidate sessions and download links. Reopen/pair again; staged upload data can still be recovered at the same browser origin.
+- Files remain until deleted or the app is uninstalled. Download important files before uninstalling. Diagnostics and transfer history can include filenames.
+
+## Updates and publication
+
+Install a newer APK over the existing app under the same signing certificate to retain shared files. 1.1 preserves the first preview’s certificate and uses the release build type. CI checks that certificate continuity before publishing. The inherited certificate originated as a development certificate, and its cache is not a permanent backup; see [publishing and signing](docs/PUBLISHING.md) before wider/store distribution.
+
+GitHub Releases is the distribution channel. A Google Play/App Store listing has not been submitted. Store copy and readiness notes are included in [STORE-LISTING.md](docs/STORE-LISTING.md).
 
 ## Build and verification
 
-JDK **17**, Gradle **8.13**, Android SDK platform **35** and build tools **35.0.0**. No application runtime dependencies. Install Gradle locally, or use the pinned Gradle setup in GitHub Actions; a wrapper binary is not bundled.
+JDK 17, Gradle 8.13, Android SDK 35. No application runtime dependencies.
 
 ```sh
 gradle assembleDebug assembleDebugAndroidTest lintDebug
+gradle assembleRelease lintRelease
 ```
 
-The APK is at `app/build/outputs/apk/debug/app-debug.apk`. [GitHub Actions](https://github.com/smile-plzz/TV-Bridge/actions) builds the app, verifies the HTTP transport, compares complete QR matrices with an independent QR implementation, runs transfer tests on Android API 35, and publishes a preview only after all gates pass.
+The release signing configuration defaults to the existing development keystore, which must already exist. For owner-controlled builds set the signing variables described in [PUBLISHING.md](docs/PUBLISHING.md). A wrapper binary is not bundled; CI pins Gradle through setup-gradle.
 
-**Signing:** previews are debug-signed for personal testing. The CI debug key is cached for update continuity, but cache retention is not guaranteed. Each release includes `SIGNING.txt` with its certificate and `SHA256SUMS.txt`. If a future APK uses a different certificate, Android requires uninstalling the old preview, which deletes its stored files. Download important files first. A stable private release key must be configured before production distribution.
-
-See [testing](docs/TESTING.md), [architecture and protocol](docs/ARCHITECTURE.md), [privacy](docs/PRIVACY.md), and [release notes](docs/RELEASE-NOTES.md).
+CI validates HTTP framing, durable upload recovery, QR matrices against an independent encoder, JavaScript syntax, Android protocol and service continuity, release-APK launch, APK signatures and checksums. [Testing evidence and owner acceptance](docs/TESTING.md) distinguish emulator verification from physical TV/iPhone usability.
 
 ## Troubleshooting
 
-| Problem | Try |
+| Problem | Action |
 | --- | --- |
-| Phone cannot open page | Use **http**, exact current address, same home LAN; disable VPN; avoid guest Wi-Fi/client isolation |
-| No address on TV | Connect Wi-Fi/Ethernet, then Retry connection; IPv4 is required |
-| Pairing rejected | Get current code, request once, approve on TV; rotate if the 10-minute window expired |
-| Connection disappeared | Return to TV Bridge, scan its current QR, pair again |
-| Transfer failed | Keep both screens awake; free storage; retry from start; ensure file ≤1 GiB |
-| File will not open | Check format support or install a compatible TV viewer/installer |
-| Cannot select a TV file | Install a TV-compatible Android document picker/file manager |
-| APK update rejected | Compare signing certificates; different preview keys need uninstall/reinstall |
+| Phone cannot reach TV | Exact current `http://` address, same LAN, no guest isolation or VPN |
+| Pairing waits | Open TV Bridge on TV, approve within one minute; rotate expired code |
+| Upload pauses/fails | Keep phone awake, choose the same file to resume; free TV space if needed |
+| Paused transfer unavailable | Discard its phone record and start again; TV partials expire after 24 hours |
+| Open on TV unavailable | Return to TV Bridge on TV, then request opening again |
+| Playback buttons disabled | Open a video in TV Bridge’s player first |
+| TV file picker/viewer missing | Install a compatible TV document picker/viewer |
+| Connection stopped | Check the two-hour limit, notification, network change or app update; reopen/pair |
+| Update certificate mismatch | Stop; compare `SIGNING.txt`. Back up files before any reinstall |
 
-## Next candidates
-
-Resumable uploads, streaming browser downloads without large Blobs, durable release signing, a foreground-service mode with explicit TV controls, and opt-in diagnostics integrations for other apps. System-wide remote control is a separate capability and requires a deliberate permissions design.
+Created by **Ismail Hossain** · [GitHub](https://github.com/smile-plzz) · [Issues](https://github.com/smile-plzz/TV-Bridge/issues)

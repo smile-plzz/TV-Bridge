@@ -13,6 +13,9 @@ import java.util.*;
 
 public final class MainActivity extends Activity implements BridgeServer.Listener {
     BridgeServer bridge;
+    BridgeService connection;
+    boolean bound;
+    String filter="all";
     LinearLayout root,content;
     TextView state;
     boolean visible;
@@ -21,15 +24,12 @@ public final class MainActivity extends Activity implements BridgeServer.Listene
     boolean dialogOpen;
     AlertDialog activeDialog;
     String page="home";
-    android.net.ConnectivityManager.NetworkCallback networkCallback;
     String boundIp;
+    final ServiceConnection serviceConnection=new ServiceConnection(){public void onServiceConnected(ComponentName n,IBinder binder){connection=((BridgeService.LocalBinder)binder).service();bridge=connection.bridge;connection.attach(MainActivity.this);home();}public void onServiceDisconnected(ComponentName n){connection=null;bridge=null;home();}};
     int dp(int n){return (int)(n*getResources().getDisplayMetrics().density);}
     @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);}
-    @Override public void onStart(){super.onStart();visible=true;startBridge();
-        networkCallback=new android.net.ConnectivityManager.NetworkCallback(){public void onLinkPropertiesChanged(Network n,LinkProperties p){ui.post(()->{if(visible&&!Objects.equals(ip(),boundIp)){stopBridge();startBridge();}});}};
-        ((android.net.ConnectivityManager)getSystemService(CONNECTIVITY_SERVICE)).registerDefaultNetworkCallback(networkCallback);
-    }
-    @Override public void onStop(){visible=false;dialogs.clear();if(activeDialog!=null)activeDialog.dismiss();dialogOpen=false;stopBridge();if(networkCallback!=null)((android.net.ConnectivityManager)getSystemService(CONNECTIVITY_SERVICE)).unregisterNetworkCallback(networkCallback);super.onStop();}
+    @Override public void onStart(){super.onStart();visible=true;startForegroundService(new Intent(this,BridgeService.class));bound=bindService(new Intent(this,BridgeService.class),serviceConnection,Context.BIND_AUTO_CREATE);}
+    @Override public void onStop(){visible=false;dialogs.clear();if(activeDialog!=null)activeDialog.dismiss();dialogOpen=false;if(connection!=null)connection.detach(this);if(bound){unbindService(serviceConnection);bound=false;}connection=null;super.onStop();}
     String ip(){
         android.net.ConnectivityManager cm=(android.net.ConnectivityManager)getSystemService(CONNECTIVITY_SERVICE);
         LinkProperties props=cm.getLinkProperties(cm.getActiveNetwork());
@@ -37,11 +37,10 @@ public final class MainActivity extends Activity implements BridgeServer.Listene
         return null;
     }
     void startBridge(){
-        boundIp=ip();
-        if(boundIp!=null)try{bridge=new BridgeServer(this,boundIp,this);}catch(Exception e){bridge=null;}
-        home();
+        if(connection!=null)connection.restart();else{startForegroundService(new Intent(this,BridgeService.class));if(!bound)bound=bindService(new Intent(this,BridgeService.class),serviceConnection,Context.BIND_AUTO_CREATE);}
     }
-    void stopBridge(){if(bridge!=null){bridge.close();bridge=null;}}
+    void stopBridge(){if(connection!=null)connection.detach(this);if(bound){unbindService(serviceConnection);bound=false;}connection=null;bridge=null;stopService(new Intent(this,BridgeService.class));home();}
+    void connectionChanged(){ui.post(()->{bridge=connection==null?null:connection.bridge;home();});}
     TextView label(String text,int size,int color){TextView t=new TextView(this);t.setText(text);t.setTextSize(size);t.setTextColor(color);t.setPadding(0,dp(5),0,dp(5));return t;}
     Button button(String text,Runnable action){Button b=new Button(this);b.setText(text);b.setAllCaps(false);b.setTextSize(17);b.setPadding(dp(20),dp(8),dp(20),dp(8));b.setOnClickListener(v->action.run());b.setOnFocusChangeListener((v,focus)->{v.setScaleX(focus?1.04f:1f);v.setScaleY(focus?1.04f:1f);});return b;}
     void base(String title){
@@ -52,7 +51,7 @@ public final class MainActivity extends Activity implements BridgeServer.Listene
     void home(){
         page="home";
         base("TV Bridge");root.addView(label("Your phone. Your TV. One local connection.",18,0xff9eb0c5));
-        if(bridge==null){root.addView(label(boundIp==null?"Connect the TV to your home Wi-Fi or Ethernet, then retry.":"Could not start on port 8765. Close other bridge apps and retry.",22,Color.WHITE));root.addView(button("Retry connection",()->{stopBridge();startBridge();}));return;}
+        if(bridge==null){root.addView(label(connection==null?"Bridge stopped. Start it when you want to connect your phone.":connection.status,22,Color.WHITE));root.addView(button("Start / retry connection",this::startBridge));return;}
         LinearLayout row=new LinearLayout(this);row.setOrientation(LinearLayout.HORIZONTAL);root.addView(row);
         String url="http://"+bridge.host;
         ImageView qr=new ImageView(this);qr.setImageBitmap(QrCode.bitmap(url));qr.setContentDescription("Scan to open TV Bridge on your phone");LinearLayout.LayoutParams qp=new LinearLayout.LayoutParams(dp(190),dp(190));qp.setMargins(0,dp(12),dp(28),dp(12));row.addView(qr,qp);
@@ -65,18 +64,25 @@ public final class MainActivity extends Activity implements BridgeServer.Listene
         state=label("Ready to pair",17,0xff70e4c3);root.addView(state);
         LinearLayout actions=new LinearLayout(this);root.addView(actions);
         Button files=button("Files on TV",this::files);actions.addView(files);
-        actions.addView(button("Disconnect all / New code",()->{stopBridge();startBridge();}));
-        actions.addView(button("About & help",this::about));
-        root.addView(label("Keep this app open during transfers. Use only on a trusted home network.\nFiles stay on this TV until you delete them or uninstall TV Bridge.",15,0xff9eb0c5));files.requestFocus();
+        actions.addView(button("New code / Disconnect all",this::startBridge));
+        LinearLayout more=new LinearLayout(this);root.addView(more);
+        more.addView(button("Connected phones",this::phones));
+        more.addView(button("About & help",this::about));
+        more.addView(button("Stop bridge",this::stopBridge));
+        root.addView(label("Connection stays active while using other apps. Stop it here or in its notification. Automatically stops after 2 hours.",15,0xff70e4c3));
+        root.addView(label("Use only on a trusted home network. Files stay on this TV until you delete them or uninstall TV Bridge.",15,0xff9eb0c5));files.requestFocus();
     }
     void files(){
         page="files";
         base("Shared files");root.addView(label("Received files · Select to open or remove · Refresh after a transfer",17,0xff9eb0c5));
         LinearLayout actions=new LinearLayout(this);root.addView(actions);actions.addView(button("Back to pairing",this::home));actions.addView(button("Refresh",this::files));actions.addView(button("Add file from TV",()->{try{startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE),42);}catch(ActivityNotFoundException e){toast("No file picker is installed. Install a TV-compatible file manager first.");}}));
+        LinearLayout categories=new LinearLayout(this);root.addView(categories);for(String kind:new String[]{"all","photos","videos","apps","documents"})categories.addView(button(kind.equals(filter)?"["+kind+"]":kind,()->{filter=kind;files();}));
         File folder=new File(getFilesDir(),"shared");File[] list=folder.listFiles((d,n)->!n.endsWith(".part"));
         if(list==null||list.length==0)root.addView(label("No files yet. Send one from your phone.",22,Color.WHITE));
-        else{Arrays.sort(list,Comparator.comparingLong(File::lastModified).reversed());for(File f:list){if(!f.isFile())continue;root.addView(button(f.getName()+"  ·  "+android.text.format.Formatter.formatFileSize(this,f.length()),()->new AlertDialog.Builder(this).setTitle(f.getName()).setItems(new String[]{"Open with installed app","Delete file"},(d,n)->{if(n==0)openFile(f);else new AlertDialog.Builder(this).setTitle("Delete this file?").setMessage(f.getName()).setNegativeButton("Keep",null).setPositiveButton("Delete",(x,y)->{if(!f.delete())toast("Could not delete file");files();}).show();}).show()));}}
+        else{Arrays.sort(list,Comparator.comparingLong(File::lastModified).reversed());int shown=0;for(File f:list){if(!f.isFile()||(!filter.equals("all")&&bridge!=null&&!bridge.kind(f.getName()).equals(filter)))continue;shown++;root.addView(button(UploadStore.displayName(f.getName())+"  ·  "+android.text.format.Formatter.formatFileSize(this,f.length()),()->new AlertDialog.Builder(this).setTitle(UploadStore.displayName(f.getName())).setItems(new String[]{"Open on TV","Delete file"},(d,n)->{if(n==0)openFile(f);else new AlertDialog.Builder(this).setTitle("Delete this file?").setMessage(UploadStore.displayName(f.getName())).setNegativeButton("Keep",null).setPositiveButton("Delete",(x,y)->{if(!f.delete())toast("Could not delete file");files();}).show();}).show()));}if(shown==0)root.addView(label("No files in this category yet.",20,Color.WHITE));}
     }
+    void phones(){page="phones";base("Connected phones");root.addView(button("Back",this::home));if(bridge==null||bridge.sessions.isEmpty()){root.addView(label("No paired phones yet.",22,Color.WHITE));return;}bridge.sessions.entrySet().removeIf(e->System.currentTimeMillis()-e.getValue().created()>60*60_000);for(Map.Entry<String,BridgeServer.Session> entry:bridge.sessions.entrySet()){root.addView(button(entry.getValue().name()+" - Disconnect",()->{bridge.revoke(entry.getKey(),null);phones();}));}root.addView(label("Sessions expire after 1 hour. New code disconnects every phone.",17,0xff9eb0c5));}
+    void requestOpen(String name){enqueue(()->show(new AlertDialog.Builder(this).setTitle("Open file from your phone?").setMessage(UploadStore.displayName(name)).setNegativeButton("Cancel",null).setPositiveButton("Open on TV",(d,w)->{try{File f=bridge==null?null:bridge.sharedFile(name);if(f!=null)openFile(f);else toast("File is no longer available.");}catch(IOException e){toast("File is no longer available.");}}).create()));}
     void openFile(File file){
         Uri uri=new Uri.Builder().scheme("content").authority("io.github.smileplzz.tvbridge.files").appendPath(file.getName()).build();
         String type=getContentResolver().getType(uri);
@@ -87,7 +93,12 @@ public final class MainActivity extends Activity implements BridgeServer.Listene
         try{startActivity(new Intent(Intent.ACTION_VIEW).setDataAndType(uri,type).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION));}
         catch(ActivityNotFoundException e){toast("No installed app can open this file type.");}
     }
-    void about(){page="about";base("About TV Bridge");root.addView(label("Version 1.0.0 · Created for Ismail Hossain",23,Color.WHITE));root.addView(label("Standalone phone ↔ Android TV communication. No account, cloud upload, ads, or analytics.\n\nPhone: Safari, Chrome, or another modern browser. TV: Android 8.0 or newer.\n\nOpen http:// plus the exact TV address if your camera cannot open the QR code. Disable VPN or guest-network isolation if connection fails.\n\nTransfers: one file at a time, up to 1 GiB, with at least 32 MiB left free. Keep your phone awake and this app visible. Interrupted transfers can be retried from the start.\n\nMedia and APK opening depend on installed TV apps. Android handles installation confirmation. System-wide remote control and other apps’ diagnostics are not included.\n\nLocal HTTP is unencrypted. Pair only on your trusted network. Press Home or leave TV Bridge to stop the server and revoke sessions.\n\nSource: github.com/smile-plzz/TV-Bridge",18,0xffb8c6d8));root.addView(button("Back",this::home));}
+    void about(){
+        page="about";base("About TV Bridge");
+        root.addView(label("Version 1.1.0 - Ismail Hossain",23,Color.WHITE));
+        root.addView(label("A standalone local bridge between your phone browser and Android TV. No account, ads, analytics or cloud uploads.\n\nSend files, text and links. Download shared TV files. Use your phone for playback controls inside TV Bridge.\n\nThe connection stays active while opening media, using a file picker or switching TV apps. Stop it from the home screen or notification. It automatically stops after 2 hours. Pairing codes last 10 minutes and approved phone sessions last 1 hour.\n\nUploads use resumable 2 MiB chunks, up to 1 GiB per file, with a 32 MiB storage reserve. Choose the same file on the same phone browser and TV address to resume. Paused transfers expire after 24 hours. Keep the phone awake while uploading.\n\nLocal HTTP is unencrypted: use only on a trusted home network. Guest Wi-Fi, VPNs and network isolation can prevent connection.\n\nMedia codecs and document pickers depend on the TV. APK installation always needs Android approval. This app does not control other TV apps, mirror screens or read their private diagnostics.\n\nSource and support: github.com/smile-plzz/TV-Bridge\nCreator: github.com/smile-plzz",18,0xffb8c6d8));
+        root.addView(button("Back",this::home));
+    }
     @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(request!=42||result!=RESULT_OK||data==null||data.getData()==null)return;Uri uri=data.getData();toast("Adding file. Keep TV Bridge open.");new Thread(()->{File part=null;try{
         String name="TV-file";try(android.database.Cursor cursor=getContentResolver().query(uri,new String[]{android.provider.OpenableColumns.DISPLAY_NAME},null,null,null)){if(cursor!=null&&cursor.moveToFirst())name=cursor.getString(0);}
         File folder=new File(getFilesDir(),"shared");if(!folder.isDirectory()&&!folder.mkdirs())throw new IOException("Cannot create shared folder");
@@ -102,5 +113,5 @@ public final class MainActivity extends Activity implements BridgeServer.Listene
     public void pair(String name,String id){BridgeServer owner=bridge;enqueue(()->{if(owner==null||owner!=bridge){dialogOpen=false;nextDialog();return;}show(new AlertDialog.Builder(this).setTitle("Connect "+name+"?").setMessage("This phone can send text and links, upload files, and download or delete files in TV Bridge’s shared folder. Approve only a request you started.").setNegativeButton("Decline",(d,w)->owner.approve(id,false)).setPositiveButton("Allow",(d,w)->owner.approve(id,true)).create());});}
     public void received(String text,boolean link){enqueue(()->{AlertDialog.Builder d=new AlertDialog.Builder(this).setTitle(link?"Open this link?":"Text from your phone").setMessage(text).setNegativeButton("Close",null);if(link)d.setPositiveButton("Open on TV",(x,y)->{try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(text)));}catch(ActivityNotFoundException e){toast("No installed app can open this link.");}});else d.setPositiveButton("Copy text",(x,y)->{((android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("TV Bridge",text));toast("Text copied. Other apps must support paste.");});show(d.create());});}
     public void changed(String event){ui.post(()->{if(visible&&state!=null)state.setText(event);});}
-    @Override public void onBackPressed(){if("home".equals(page))finish();else home();}
+    @Override public void onBackPressed(){if(!"home".equals(page)){home();return;}if(bridge==null){finish();return;}new AlertDialog.Builder(this).setTitle("Leave TV Bridge?").setMessage("Keep the connection running to transfer files while using other apps, or stop it now.").setNeutralButton("Stay here",null).setNegativeButton("Stop and exit",(d,w)->{stopBridge();finish();}).setPositiveButton("Keep running",(d,w)->finish()).show();}
 }

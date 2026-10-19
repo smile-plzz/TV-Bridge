@@ -33,21 +33,36 @@ jobs:
       - name: Protocol and QR checks
         run: |
           mkdir -p test-classes
-          javac -cp "$ANDROID_HOME/platforms/android-35/android.jar" -d test-classes app/src/main/java/io/github/smileplzz/tvbridge/{HttpWire,QrCode}.java tests/{ProtocolTest,QrDump}.java
+          javac -cp "$ANDROID_HOME/platforms/android-35/android.jar" -d test-classes app/src/main/java/io/github/smileplzz/tvbridge/{HttpWire,QrCode,UploadStore}.java tests/{ProtocolTest,QrDump,UploadStoreTest}.java
           java -cp test-classes io.github.smileplzz.tvbridge.ProtocolTest
+          java -cp test-classes io.github.smileplzz.tvbridge.UploadStoreTest
           pip install qrcode==8.2
           python tests/check_qr.py "test-classes:$ANDROID_HOME/platforms/android-35/android.jar"
           node --check app/src/main/assets/app.js
       - name: Build and lint
-        run: gradle --no-daemon assembleDebug assembleDebugAndroidTest lintDebug
+        run: |
+          gradle --no-daemon assembleDebug assembleDebugAndroidTest lintDebug
+          gradle --no-daemon assembleRelease lintRelease
       - name: Package
         run: |
           mkdir -p dist
-          cp app/build/outputs/apk/debug/app-debug.apk dist/TV-Bridge-1.0.0-preview.apk
+          cp app/build/outputs/apk/debug/app-debug.apk dist/TV-Bridge-test-target.apk
+          cp app/build/outputs/apk/release/app-release.apk dist/TV-Bridge-1.1.0.apk
           cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk dist/TV-Bridge-tests.apk
           cd dist
-          sha256sum TV-Bridge-1.0.0-preview.apk > SHA256SUMS.txt
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs TV-Bridge-1.0.0-preview.apk > SIGNING.txt
+          sha256sum TV-Bridge-1.1.0.apk > SHA256SUMS.txt
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs TV-Bridge-1.1.0.apk > SIGNING.txt
+      - name: Preserve installed-app signing identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=$(gh api 'repos/${{ github.repository }}/releases?per_page=1' --jq '.[0].tag_name // empty')
+          if [ -n "$TAG" ]; then
+            gh release download "$TAG" --pattern SIGNING.txt --dir previous-signing
+            PREVIOUS=$(grep 'certificate SHA-256 digest:' previous-signing/SIGNING.txt)
+            CURRENT=$(grep 'certificate SHA-256 digest:' dist/SIGNING.txt)
+            test "$PREVIOUS" = "$CURRENT" || { echo 'Signing identity changed. Restore the original key before publishing.'; exit 1; }
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: tv-bridge-build
@@ -83,15 +98,21 @@ jobs:
           target: google_apis
           disable-animations: true
           script: |
-            adb install -r dist/TV-Bridge-1.0.0-preview.apk
+            adb install -r dist/TV-Bridge-test-target.apk
             adb install -r dist/TV-Bridge-tests.apk
             adb shell am instrument -w io.github.smileplzz.tvbridge.test/io.github.smileplzz.tvbridge.BridgeInstrumentation | tee device-results.txt
             grep -q TV_BRIDGE_TESTS_OK device-results.txt
+            adb pull /sdcard/Android/data/io.github.smileplzz.tvbridge/files/tv-home.png tv-home.png
+            adb install -r dist/TV-Bridge-1.1.0.apk
+            adb shell am start -W -n io.github.smileplzz.tvbridge/.MainActivity
+            adb shell pidof io.github.smileplzz.tvbridge
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: device-results
-          path: device-results.txt
+          path: |
+            device-results.txt
+            tv-home.png
   publish:
     if: github.event_name != 'pull_request'
     needs: [build, device-tests]
@@ -104,9 +125,9 @@ jobs:
         with:
           name: tv-bridge-build
           path: dist
-      - name: Publish installable preview
+      - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v1.0.0-preview.${{ github.run_number }}"
-          gh release create "$TAG" dist/TV-Bridge-1.0.0-preview.apk dist/SHA256SUMS.txt dist/SIGNING.txt --target "$GITHUB_SHA" --title "TV Bridge 1.0.0 — Preview ${{ github.run_number }}" --prerelease --notes-file docs/RELEASE-NOTES.md
+          TAG="v1.1.0"
+          gh release create "$TAG" dist/TV-Bridge-1.1.0.apk dist/SHA256SUMS.txt dist/SIGNING.txt --target "$GITHUB_SHA" --title "TV Bridge 1.1.0" --latest --notes-file docs/RELEASE-NOTES.md

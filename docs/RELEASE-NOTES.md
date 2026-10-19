@@ -1,13 +1,26 @@
-# TV Bridge 1.0.0 — first preview
+# TV Bridge 1.1.0
 
-Standalone Android TV companion with a phone browser interface. Independent from Nook TV and NowShowing.
+A standalone local phone ↔ Android TV companion, distributed as a release-mode APK through GitHub Releases.
 
-Included: QR/code pairing with TV approval, sequential file uploads with progress/cancel, authenticated downloads and deletion, TV document-picker import, local photo/video viewing, text display/copy, confirmed HTTP(S) link opening, JSON diagnostics, expiring sessions, network change handling, and TV remote focus.
+## Improvements
 
-Install **TV-Bridge-1.0.0-preview.apk** on Android TV 8.0+; scan the on-screen QR using your phone. Both devices need the same trusted home network. Safari or Chrome works without a phone app.
+- Keep the connection while viewing media, selecting a TV file or using another TV app. User-started foreground service, explicit Stop and two-hour automatic shutdown.
+- Recoverable 2 MiB upload chunks, progress/speed, pause, persistent transfer identities, rollback of interrupted chunks and SHA-256 of completed TV files.
+- Browser-native downloads through one-minute, one-use authorized links. Large files no longer require an app-created Blob in phone memory.
+- File search, category filters, sorting, friendly names and phone-requested Open on TV with TV confirmation.
+- Phone controls for TV Bridge video: play/pause, ±30 seconds, volume and close.
+- Named phone sessions, individual disconnect that closes active connections, live connection status, recent phone transfer history and richer diagnostics.
+- TV banner with product name, improved About/help, store-listing draft and publication/upgrade guidance.
+- Release/debug lint, protocol/storage/QR checks, Android transfer tests, foreground-service continuity, release launch and certificate-continuity gates.
 
-This is a **debug-signed testing preview**. Automated build/lint, transport, QR matrix, and Android protocol tests gate publication. Real TV remote usability, iPhone browser behavior, OEM document pickers, and device-specific codecs still need owner testing.
+## Installation and upgrades
 
-Keep TV Bridge visible during transfers. Leaving it revokes sessions. Transfers restart from the beginning after interruption. Files ≤1 GiB; large browser downloads consume phone memory. Local HTTP is unencrypted. Diagnostics describe TV Bridge only. This release does not provide system-wide remote control or typing into other applications.
+Install `TV-Bridge-1.1.0.apk` on Android TV 8.0+, scan the QR with your phone, enter the code and approve on TV. Both devices need the same trusted IPv4 LAN. Existing preview installations can upgrade under the preserved signing identity without intentionally deleting app data.
 
-The preview signing certificate is included in `SIGNING.txt`. CI caches the signing key but cannot guarantee indefinite continuity; a later certificate change requires reinstalling. Save important shared files before uninstalling.
+The release APK is not debuggable. Its certificate is retained from the original development preview for update compatibility. The key cache is not permanent storage; publication fails if the certificate changes. A durable owner-controlled signing setup and store-policy review remain required before Google Play distribution.
+
+## Known limits
+
+Local HTTP is unencrypted. Files ≤1 GiB. Keep the phone awake for uploads. Resume requires the same browser origin and file selection; partials expire after 24 hours. Interrupted downloads need a new download request. The bridge stops after two hours; sessions expire after one hour. Media and document support vary by TV. This does not provide system-wide remote control, mirroring or private diagnostics for other apps.
+
+Physical TV/iPhone UX and device-specific codecs remain owner acceptance; emulator checks do not replace that evidence. This release does not claim a submitted or approved app-store listing.

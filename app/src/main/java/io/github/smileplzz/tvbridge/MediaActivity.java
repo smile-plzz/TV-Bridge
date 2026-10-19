@@ -9,6 +9,11 @@ import java.io.*;
 
 /** Local media only. Uses platform codecs and samples photos to protect TV memory. */
 public final class MediaActivity extends Activity {
+    static volatile MediaActivity current;
+    volatile int position,duration,volume;
+    volatile boolean playing;
+    final android.os.Handler ticker=new android.os.Handler(android.os.Looper.getMainLooper());
+    final Runnable tick=new Runnable(){public void run(){if(video!=null){try{position=video.getCurrentPosition();duration=video.getDuration();playing=video.isPlaying();volume=((android.media.AudioManager)getSystemService(AUDIO_SERVICE)).getStreamVolume(android.media.AudioManager.STREAM_MUSIC);}catch(Exception ignored){}}ticker.postDelayed(this,1000);}};
     VideoView video;
     Bitmap bitmap;
     @Override public void onCreate(Bundle state){super.onCreate(state);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);String type=getIntent().getType();
@@ -21,6 +26,10 @@ public final class MediaActivity extends Activity {
         }
     }
     @Override public boolean onKeyDown(int key,KeyEvent event){if(video!=null&&(key==KeyEvent.KEYCODE_DPAD_CENTER||key==KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)){if(video.isPlaying())video.pause();else video.start();return true;}return super.onKeyDown(key,event);}
+    @Override public void onStart(){super.onStart();current=this;ticker.post(tick);}
+    @Override public void onStop(){if(current==this)current=null;ticker.removeCallbacksAndMessages(null);super.onStop();}
     @Override public void onPause(){if(video!=null)video.pause();super.onPause();}
     @Override public void onDestroy(){if(video!=null)video.stopPlayback();if(bitmap!=null)bitmap.recycle();super.onDestroy();}
+    static org.json.JSONObject snapshot(){org.json.JSONObject j=new org.json.JSONObject();try{MediaActivity a=current;j.put("active",a!=null&&a.video!=null);if(a!=null&&a.video!=null)j.put("playing",a.playing).put("position",a.position).put("duration",a.duration).put("volume",a.volume);}catch(Exception ignored){}return j;}
+    static boolean control(String action){MediaActivity a=current;if(a==null||a.video==null)return false;a.runOnUiThread(()->{if(current!=a)return;switch(action){case "play":a.video.start();break;case "pause":a.video.pause();break;case "back":a.video.seekTo(Math.max(0,a.video.getCurrentPosition()-30000));break;case "forward":a.video.seekTo(Math.min(a.video.getDuration(),a.video.getCurrentPosition()+30000));break;case "stop":a.finish();break;case "volume-up":case "volume-down":((android.media.AudioManager)a.getSystemService(AUDIO_SERVICE)).adjustStreamVolume(android.media.AudioManager.STREAM_MUSIC,action.equals("volume-up")?android.media.AudioManager.ADJUST_RAISE:android.media.AudioManager.ADJUST_LOWER,android.media.AudioManager.FLAG_SHOW_UI);break;}});return true;}
 }
